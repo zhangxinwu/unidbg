@@ -73,6 +73,10 @@ final class RegAccessPrinter {
                     } else {
                         long value = backend.reg_read(regId).longValue();
                         builder.append(' ').append(instruction.regName(reg)).append("=0x").append(Long.toHexString(value));
+                        String string = getMemoryString(backend, value);
+                        if (string != null && !string.isEmpty()) {
+                            builder.append(" (").append(string).append(')');
+                        }
                     }
                 } else if (regId >= Arm64Const.UC_ARM64_REG_W0 && regId <= Arm64Const.UC_ARM64_REG_W30) {
                     if (forWriteRegs) {
@@ -84,6 +88,26 @@ final class RegAccessPrinter {
                 }
             }
         }
+    }
+
+    String getMemoryString(Backend backend, long addr) {
+        StringBuilder builder = new StringBuilder();
+        a:
+        do {
+            try {
+                byte[] bytes = backend.mem_read(addr, 1);
+                for (int i = 0; i < bytes.length; i++) {
+                    int fb = bytes[i];
+                    if (fb <= 31 || fb >= 127)
+                        break a;
+                    builder.append(String.format("%c", fb));
+                }
+                addr++;
+            } catch (Exception e) {
+                return null;
+            }
+        } while (true);
+        return builder.toString();
     }
 
 }
